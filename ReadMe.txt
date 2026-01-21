@@ -5,3 +5,5 @@ Its main purpose is to organize work, and stimulate collaboration between the gr
 It is an evolving active structure to which all the lab members are welcome to contribute.
 
 20.01.2026
+
+Credentials issued, git protected by a password for push to main.
