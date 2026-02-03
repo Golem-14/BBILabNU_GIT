@@ -3,23 +3,27 @@ close all
 clc
 
 %%%%%% Path to data
-
-pathToData = "C:\Users\User\Desktop\New Sensors Toheeb\Calibration STA 12.12.25"; %the path to you folder (copy from the address line)
-% You do NOT need to move the script or the data files
+pathToData = "path to your data"; % input path to your folder
 
 %%%%%% Parameters
-
-N_RI = 6; % Number of RI values
-N_Val = 3; % Number of times each RI was saved
-RI = [1.34761 1.34974 1.35216 1.35457 1.35696 1.35845]; % RI values
-sensor_trace = 3;
+N_RI = 6; 
+N_Val = 20; 
+RI = [1.34761 1.34974 1.35216 1.35457 1.35696 1.35845]; 
+sensor_trace = 1;
 FBG_trace = sensor_trace;
-sensor_name = "LV3";
-%%%%%% Load data
+sensor_name = "Name_Code";
+laser_scan_speed = "1000Hz"; % Enlight saves 1000 Hz by default
 
+%%%%%% Load data with Progress Bar
+h = waitbar(0, 'Initializing data loading...', 'Name', 'Processing Fiber Sensor Data');
+total_files = N_RI * N_Val;
 kk = 1;
+
 for ii = 1:N_RI
     for jj = 1:N_Val
+        % Update progress bar
+        current_prog = kk / total_files;
+        waitbar(current_prog, h, sprintf('Loading RI %d of %d: File %d of %d', ii, N_RI, jj, N_Val));
         
         Fname = strcat(pathToData, '\', 'RI', num2str(ii), '_', num2str(jj), '.txt');
         Data = importdata(Fname);
@@ -30,74 +34,42 @@ for ii = 1:N_RI
         end
         
         CH1(kk,:) = Mat(:,2);
-        try
-            CH2(kk,:) = Mat(:,3);
-        catch
-        end
-        try
-            CH3(kk,:) = Mat(:,4);
-        catch
-        end
-        try
-            CH4(kk,:) = Mat(:,5);
-        catch
-        end
-        try
-            CH5(kk,:) = Mat(:,6);
-        catch
-        end
-        try
-            CH6(kk,:) = Mat(:,7);
-        catch
-        end
-        try
-            CH7(kk,:) = Mat(:,8);
-        catch
-        end
-        try
-            CH8(kk,:) = Mat(:,9);
-        catch
-        end
+        % ... (CH2 through CH8 logic remains exactly as you had it)
+        try CH2(kk,:) = Mat(:,3); catch; end
+        try CH3(kk,:) = Mat(:,4); catch; end
+        try CH4(kk,:) = Mat(:,5); catch; end
+        try CH5(kk,:) = Mat(:,6); catch; end
+        try CH6(kk,:) = Mat(:,7); catch; end
+        try CH7(kk,:) = Mat(:,8); catch; end
+        try CH8(kk,:) = Mat(:,9); catch; end
         
         kk = kk+1;
-        
     end
 end
-
 kk = kk-1;
 
-%%%%%%
 %%%%%% Processing
-%%%%%%
+% Update progress bar for filtering
+waitbar(0, h, 'Applying Butterworth Filter...');
 
-% Filtering
-
+filter_name = "Buttherworth_filter";
 [b,a] = butter(5,0.01);
 
 for ii = 1:kk
+    waitbar(ii/kk, h, 'Filtering signal traces...');
     CHF1(ii,:) = filter(b,a,CH1(ii,:));
-    if exist('CH2')
-        CHF2(ii,:) = filter(b,a,CH2(ii,:));
-    end
-    if exist('CH3')
-        CHF3(ii,:) = filter(b,a,CH3(ii,:));
-    end
-    if exist('CH4')
-        CHF4(ii,:) = filter(b,a,CH4(ii,:));
-    end
-    if exist('CH5')
-        CHF5(ii,:) = filter(b,a,CH5(ii,:));
-    end
-    if exist('CH6')
-        CHF6(ii,:) = filter(b,a,CH6(ii,:));
-    end
-    if exist('CH7')
-        CHF7(ii,:) = filter(b,a,CH7(ii,:));
-    end
-    if exist('CH8')
-        CHF8(ii,:) = filter(b,a,CH8(ii,:));
-    end
+    if exist('CH2','var'); CHF2(ii,:) = filter(b,a,CH2(ii,:)); end
+    if exist('CH3','var'); CHF3(ii,:) = filter(b,a,CH3(ii,:)); end
+    if exist('CH4','var'); CHF4(ii,:) = filter(b,a,CH4(ii,:)); end
+    if exist('CH5','var'); CHF5(ii,:) = filter(b,a,CH5(ii,:)); end
+    if exist('CH6','var'); CHF6(ii,:) = filter(b,a,CH6(ii,:)); end
+    if exist('CH7','var'); CHF7(ii,:) = filter(b,a,CH7(ii,:)); end
+    if exist('CH8','var'); CHF8(ii,:) = filter(b,a,CH8(ii,:)); end
 end
+
+% Close progress bar once data is pre-processed
+close(h);
+
 
 %remove left strange peak
 Wavelength = Wavelength(1001:end);
@@ -181,27 +153,27 @@ end
 %for now take the first of the measurements, later maybe take average
 for jj = 1:N_RI
     dd = N_Val*(jj-1)+1;
-    CHF1_temp(jj,:) = mean(CHF1(dd:dd+2, :));
+    CHF1_temp(jj,:) = mean(CHF1(dd:dd+(N_Val-1), :));
     if exist('CH2')
-        CHF2_temp(jj,:) = mean(CHF2(dd:dd+2, :));
+        CHF2_temp(jj,:) = mean(CHF2(dd:dd+(N_Val-1), :));
     end
     if exist('CH3')
-        CHF3_temp(jj,:) = mean(CHF3(dd:dd+2, :));
+        CHF3_temp(jj,:) = mean(CHF3(dd:dd+(N_Val-1), :));
     end
     if exist('CH4')
-        CHF4_temp(jj,:) = mean(CHF4(dd:dd+2, :));
+        CHF4_temp(jj,:) = mean(CHF4(dd:dd+(N_Val-1), :));
     end
     if exist('CH5')
-        CHF5_temp(jj,:) = mean(CHF5(dd:dd+2, :));
+        CHF5_temp(jj,:) = mean(CHF5(dd:dd+(N_Val-1), :));
     end
     if exist('CH6')
-        CHF6_temp(jj,:) = mean(CHF6(dd:dd+2, :));
+        CHF6_temp(jj,:) = mean(CHF6(dd:dd+(N_Val-1), :));
     end
     if exist('CH7')
-        CHF7_temp(jj,:) = mean(CHF7(dd:dd+2, :));
+        CHF7_temp(jj,:) = mean(CHF7(dd:dd+(N_Val-1), :));
     end
     if exist('CH8')
-        CHF8_temp(jj,:) = mean(CHF7(dd:dd+2, :));
+        CHF8_temp(jj,:) = mean(CHF7(dd:dd+(N_Val-1), :));
     end
 end
 
@@ -284,7 +256,7 @@ elseif sensor_trace == 8
 end
 
 %finding peaks
-%find peaks with a very clean filter for accurace
+%find peaks with a very clean filter for accuracy
 [b,a] = butter(5,0.1);
 for ii = 1:N_RI
     CHF_sens_clean(ii,:) = filter(b,a,CHF_sens(ii,:));
@@ -315,151 +287,307 @@ peak_locs = zeros(N_RI, n_peaks);
 valleys = zeros(N_RI, n_valleys);
 valley_locs = zeros(N_RI, n_valleys);
 
-%peaks
-for ii=1:n_peaks
+
+%############### CHANGE 290126 ###############
+
+
+% Ensure interval is an integer once before starting
+int_val = round(interval); 
+
+for ii = 1:n_peaks
+    % 1. Enforce integer indexing for the current peak center
+    peak_i = round(pre_peak_locs(1, ii));
     
-    peak_i = pre_peak_locs(1,ii);
-    
-    if peak_i > interval  && peak_i+interval < length(Wavelength) %skip first few peaks and valleys
+    % 2. Safety Check (using the integer version of interval)
+    if peak_i > int_val && peak_i + int_val < length(Wavelength)
+        
+        % 3. Extract and Center Wavelength (Numerical Stability)
+        % Using x_raw for peak_intervals, and x_shifted for polyfit
+        idx_range = peak_i - int_val : peak_i + int_val;
+        x_raw = Wavelength(idx_range);
+        x_raw = x_raw(:); % Ensure column
+        
+        % Center around the middle of the window
+        mid_pt = floor(length(x_raw)/2) + 1;
+        x_center = x_raw(mid_pt); 
+        x_shifted = x_raw - x_center; 
+        
         for jj = 1:N_RI
-            x = Wavelength(peak_i-interval:peak_i+interval);
-            y = CHF_sens(jj,peak_i-interval:peak_i+interval);
+            y = CHF_sens(jj, idx_range);
+            y = y(:); % Ensure column
             
-            p = polyfit(x,y,2);
-            peaks(jj,ii) = -p(2)^2/(4*p(1))+p(3);
-            peak_locs(jj,ii) = -p(2)/(2*p(1));
+            % 4. Quadratic fit (2nd order)
+            p = polyfit(x_shifted, y, 2);
+            
+            % 5. Peak Amplitude Calculation (c - b^2/4a)
+            peaks(jj, ii) = p(3) - (p(2)^2) / (4*p(1));
+            
+            % 6. Peak Location Calculation
+            % Calculate vertex on shifted scale, then add x_center back
+            opt_x_shifted = -p(2) / (2*p(1));
+            peak_locs(jj, ii) = opt_x_shifted + x_center;
     
-            peak_polyvals(jj,ii,:) = polyval(p,x);
+            % 7. Store Polyvals (Keep dimensions compatible with original)
+            % Note: We use x_shifted to match how 'p' was generated
+            peak_polyvals(jj, ii, :) = polyval(p, x_shifted);
         end
     
-        peak_intervals(ii,:) = x;
+        % Maintain original variable name
+        peak_intervals(ii, :) = x_raw';
     end
 end
 
-%plotting peaks
+
+%#################
+
+
+% --- Optimized Plotting Peaks ---
 figure
 for ii = 1:n_peaks
-    peak_i = pre_peak_locs(1,ii);
-
-    if peak_i > interval && peak_i+interval < length(Wavelength)
-        subplot(5,ceil(n_peaks/5), ii)
-        x = peak_intervals(ii,:);
-        y = CHF_sens(:,peak_i-interval:peak_i+interval);
+    peak_i = round(pre_peak_locs(1,ii)); % Ensure integer
+    int_val = round(interval);           % Ensure integer
     
-        plot(x, y, 'LineWidth',2)
+    if peak_i > int_val && peak_i + int_val < length(Wavelength)
+        subplot(5, ceil(n_peaks/5), ii)
+        
+        % 1. Get X and ensure it's a column
+        x = peak_intervals(ii, :);
+        x = x(:); 
+        
+        % 2. Get Y (Matrix of all RI steps for this peak)
+        % We transpose it (') to make the columns match the length of x
+        y = CHF_sens(:, peak_i - int_val : peak_i + int_val)';
+    
+        % 3. Plotting Raw Data
+        plot(x, y, 'LineWidth', 2) 
         hold on
-        plot(x,squeeze(peak_polyvals(:,ii,:)),'--','LineWidth',2)
-        plot(peak_locs(:,ii), peaks(:,ii), '*', 'MarkerSize', 7)
-
+        
+        % 4. Plotting the Fits
+        % squeeze() makes it a matrix, transpose (') makes it match x
+        y_fit = squeeze(peak_polyvals(:, ii, :))';
+        plot(x, y_fit, '--', 'LineWidth', 1)
+        
+        % 5. Plotting the detected Maxima
+        plot(peak_locs(:, ii), peaks(:, ii), '*', 'MarkerSize', 7)
+        
         title(sprintf('Peak %i', ii))
+        grid on
     end
 end
 
-%valleys
-for ii=1:n_valleys
+
+% Ensure interval is an integer once
+int_val = round(interval); 
+
+for ii = 1:n_valleys
+    % 1. Enforce integer indexing for the current valley center
+    valley_i = round(pre_valley_locs(1, ii));
     
-    valley_i = pre_valley_locs(1,ii);
-    
-    if valley_i > interval && valley_i+interval < length(Wavelength) %skip first few peaks and valleys
+    % 2. Safety Check (using integer logic)
+    if valley_i > int_val && valley_i + int_val < length(Wavelength)
+        
+        % Define the integer range for indexing
+        idx_range = (valley_i - int_val) : (valley_i + int_val);
+        
+        % 3. Extract and Center Wavelength
+        x_raw = Wavelength(idx_range);
+        x_raw = x_raw(:); % Force column orientation
+        
+        mid_pt = floor(length(x_raw)/2) + 1;
+        x_center = x_raw(mid_pt); 
+        x_shifted = x_raw - x_center; 
+        
         for jj = 1:N_RI
-            x = Wavelength(valley_i-interval:valley_i+interval);
-            y = CHF_sens(jj,valley_i-interval:valley_i+interval);
+            % Use the pre-calculated integer index range
+            y = CHF_sens(jj, idx_range);
+            y = y(:); % Force column
             
-            p = polyfit(x,y,2);
-            valleys(jj,ii) = -p(2)^2/(4*p(1))+p(3);
-            valley_locs(jj,ii) = -p(2)/(2*p(1));
+            % 4. Quadratic fit to shifted data
+            p = polyfit(x_shifted, y, 2);
+            
+            % 5. Valley Amplitude (p(3) - b^2/4a)
+            valleys(jj, ii) = p(3) - (p(2)^2) / (4*p(1));
+            
+            % 6. Valley Location
+            opt_x_shifted = -p(2) / (2*p(1));
+            valley_locs(jj, ii) = opt_x_shifted + x_center;
     
-            valley_polyvals(jj,ii,:) = polyval(p,x);
+            % 7. Store Polyvals
+            valley_polyvals(jj, ii, :) = polyval(p, x_shifted);
         end
     
-        valley_intervals(ii,:) = x;
+        % Maintain original variable name structure
+        valley_intervals(ii, :) = x_raw';
     end
 end
 
-%plotting valleys
+
+
+% --- Plotting Valleys ---
 figure
 for ii = 1:n_valleys
-    valley_i = pre_valley_locs(1,ii);
-
-    if valley_i > interval && valley_i+interval < length(Wavelength)
-        subplot(5,ceil(n_valleys/5), ii)
-        x = valley_intervals(ii,:);
-        y = CHF_sens(:,valley_i-interval:valley_i+interval);
+    % Ensure indices are integers to prevent colon operator warnings
+    val_i = round(pre_valley_locs(1,ii));
+    int_val = round(interval);
     
-        plot(x, y, 'LineWidth',2)
+    if val_i > int_val && val_i + int_val < length(Wavelength)
+        subplot(5, ceil(n_valleys/5), ii)
+        
+        % 1. Extract X and force it to be a column vector
+        x = valley_intervals(ii, :);
+        x = x(:); 
+        
+        % 2. Extract Y and transpose it (') to align with x
+        % Original: [N_RI x Window] -> Transposed: [Window x N_RI]
+        y = CHF_sens(:, val_i - int_val : val_i + int_val)';
+    
+        % 3. Plot Raw Data (One line per RI step)
+        plot(x, y, 'LineWidth', 2)
         hold on
-        plot(x,squeeze(valley_polyvals(:,ii,:)),'--','LineWidth',2)
-        plot(valley_locs(:,ii), valleys(:,ii), '*', 'MarkerSize', 7)
-
+        
+        % 4. Plot the Fits
+        % Squeeze turns [RI x 1 x Window] into [RI x Window]
+        % Transpose (') makes it [Window x RI] to match x
+        y_fit = squeeze(valley_polyvals(:, ii, :))';
+        plot(x, y_fit, '--', 'LineWidth', 1)
+        
+        % 5. Plot the detected Minima (the vertex of the parabola)
+        plot(valley_locs(:, ii), valleys(:, ii), '*', 'MarkerSize', 7)
+        
         title(sprintf('Valley %i', ii))
+        grid on
     end
 end
 
-% find sensitivities
-x = RI(:);
-for kk=1:n_peaks
-    y = peaks(:,kk);
-    p = polyfit(x,y,1);
-    pp = polyval(p,x);
-    sens_peaks(kk) = p(1);
-    r2_peaks(kk) = rsquare(y,pp);
+
+%######################################################################
+
+
+% SUGGESTED BY GENIMI
+
+% --- Main Logic ---
+% Define the design matrix once: y = mx + c
+X_mat = [RI(:), ones(numel(RI), 1)];
+
+% Process Peaks
+[sens_peaks, r2_peaks] = analyze_sensitivity(peaks, X_mat);
+
+% Process Valleys
+[sens_valleys, r2_valleys] = analyze_sensitivity(valleys, X_mat);
+
+% --- Filtering (Keeping your original naming convention) ---
+% For Peaks
+good_peaks_indices = find(r2_peaks > 0.9);
+good_peaks_sens    = sens_peaks(good_peaks_indices);
+n_good_peaks       = length(good_peaks_indices);
+
+% For Valleys
+good_valleys_indices = find(r2_valleys > 0.9);
+good_valleys_sens    = sens_valleys(good_valleys_indices);
+n_good_valleys       = length(good_valleys_indices);
+
+% --- Helper Function ---
+function [svec, rvec] = analyze_sensitivity(data, X)
+    num_features = size(data, 2);
+    svec = zeros(1, num_features);
+    rvec = zeros(1, num_features);
+    
+    for kk = 1:num_features
+        y = data(:, kk);
+        % Solve for [slope; intercept] using backslash operator
+        beta = X \ y; 
+        svec(kk) = beta(1);
+        
+        % Calculate R-squared: 1 - (SS_res / SS_tot)
+        y_fit = X * beta;
+        ss_res = sum((y - y_fit).^2);
+        ss_tot = sum((y - mean(y)).^2);
+        rvec(kk) = 1 - (ss_res / ss_tot);
+    end
 end
 
-for kk=1:n_valleys
-    y = valleys(:,kk);
-    p = polyfit(x,y,1);
-    pp = polyval(p,x);
-    sens_valleys(kk) = p(1);
-    r2_valleys(kk) = rsquare(y,pp);
-end
 
-%filtering r2 > 0.9 
-good_peaks_sens = sens_peaks(r2_peaks>0.9);
-good_peaks_indices = find(r2_peaks>0.9);
-n_good_peaks = length(good_peaks_indices);
 
-good_valleys_sens = sens_valleys(r2_valleys>0.9);
-good_valleys_indices = find(r2_valleys>0.9);
-n_good_valleys = length(good_valleys_indices);
 
-%plot sensitive peaks and valleys
+%###################################################
+
+
+% --- Plotting Filtered "Good" Peaks ---
 figure  
-for ii=1:n_good_peaks
+for ii = 1:n_good_peaks
+    % Get the original index of the 'good' peak
     ind = good_peaks_indices(ii);
     
-    peak_i = pre_peak_locs(1,ind);
-
-    subplot(5,ceil(n_good_peaks/5), ii)
-    x = peak_intervals(ind,:);
-    y = CHF_sens(:,peak_i-interval:peak_i+interval);
-
-    plot(x, y, 'LineWidth',2)
-    hold on
-    plot(x,squeeze(peak_polyvals(:,ind,:)),'--','LineWidth',2)
-    plot(peak_locs(:,ind), peaks(:,ind), '*', 'MarkerSize', 7)
-
-    title(sprintf('Peak %i (%f dB/RIU)', ind, good_peaks_sens(ii)))
+    % Ensure indices are integers
+    peak_i = round(pre_peak_locs(1, ind));
+    int_val = round(interval);
     
-end
-
-figure
-for ii=1:n_good_valleys
-    ind = good_valleys_indices(ii);
-
-    valley_i = pre_valley_locs(1,ind);
-
-    subplot(5,ceil(n_good_valleys/5), ii)
-    x = valley_intervals(ind,:);
-    y = CHF_sens(:,valley_i-interval:valley_i+interval);
-
-    plot(x, y, 'LineWidth',2)
+    subplot(5, ceil(n_good_peaks/5), ii)
+    
+    % 1. X as a column vector
+    x = peak_intervals(ind, :);
+    x = x(:); 
+    
+    % 2. Y as a matrix where columns match X length
+    % Transpose the slice: [N_RI x Window] becomes [Window x N_RI]
+    y = CHF_sens(:, peak_i - int_val : peak_i + int_val)';
+    
+    % 3. Plotting Raw Data (Multiple lines)
+    plot(x, y, 'LineWidth', 2)
     hold on
-    plot(x,squeeze(valley_polyvals(:,ind,:)),'--','LineWidth',2)
-    plot(valley_locs(:,ind), valleys(:,ind), '*', 'MarkerSize', 7)
-
-    title(sprintf('Valley %i (%f dB/RIU)', ind, good_valleys_sens(ii)))
-
+    
+    % 4. Plotting the Fits
+    % Squeeze and transpose: [N_RI x Window] becomes [Window x N_RI]
+    y_fit = squeeze(peak_polyvals(:, ind, :))';
+    plot(x, y_fit, '--', 'LineWidth', 1)
+    
+    % 5. Plotting the detected Maxima
+    plot(peak_locs(:, ind), peaks(:, ind), '*', 'MarkerSize', 7)
+    
+    % Title with sensitivity
+    title(sprintf('Peak %i (%.2f dB/RIU)', ind, good_peaks_sens(ii)))
+    grid on
 end
+
+
+
+% --- Plotting Filtered "Good" Valleys ---
+figure
+for ii = 1:n_good_valleys
+    % Get the original index of the 'good' valley
+    ind = good_valleys_indices(ii);
+    
+    % Ensure indices are integers
+    val_i = round(pre_valley_locs(1, ind));
+    int_val = round(interval);
+    
+    subplot(5, ceil(n_good_valleys/5), ii)
+    
+    % 1. X as a column vector
+    x = valley_intervals(ind, :);
+    x = x(:); 
+    
+    % 2. Y as a matrix where columns match X length
+    % Transpose: [N_RI x Window] becomes [Window x N_RI]
+    y = CHF_sens(:, val_i - int_val : val_i + int_val)';
+    
+    % 3. Plotting Raw Data (Multiple lines for each RI step)
+    plot(x, y, 'LineWidth', 2)
+    hold on
+    
+    % 4. Plotting the Fits
+    % Squeeze and transpose: [N_RI x Window] becomes [Window x N_RI]
+    y_fit = squeeze(valley_polyvals(:, ind, :))';
+    plot(x, y_fit, '--', 'LineWidth', 1)
+    
+    % 5. Plotting the detected Minima
+    plot(valley_locs(:, ind), valleys(:, ind), '*', 'MarkerSize', 7)
+    
+    % Title with sensitivity (rounded to 2 decimal places)
+    title(sprintf('Valley %i (%.2f dB/RIU)', ind, good_valleys_sens(ii)))
+    grid on
+end
+
 
 %plot sensitivities
 figure
@@ -502,7 +630,7 @@ title('Sensitivities')
 
 
 % 1. Create the full file path using the existing pathToData
-log_name = sprintf('chan_%d_sens_%s_log.txt', sensor_trace, sensor_name);
+log_name = sprintf('calib_chan_%d_sens_%s_Filter_%s_%s_log.txt', sensor_trace, sensor_name, filter_name, laser_scan_speed);
 log_full_path = fullfile(pathToData, log_name);
 
 % 2. Open the file using the path to your data folder
@@ -516,6 +644,7 @@ num_peaks = length(good_peaks_indices);
 num_valleys = length(good_valleys_indices);
 max_rows = max(num_peaks, num_valleys);
 
+
 % 4. Write Header
 fprintf(fileID, '\n%s\n', repmat('=', 1, 125));
 fprintf(fileID, 'Run Timestamp:        %s\n', char(current_time));
@@ -524,6 +653,8 @@ fprintf(fileID, 'The sensor code name: %s\n', sensor_name);
 fprintf(fileID, 'Data Path:            %s\n', pathToData);
 fprintf(fileID, 'Number of RI:         %d\n', N_RI);
 fprintf(fileID, 'Number of measurements per RI:            %d\n', N_Val);
+fprintf(fileID, 'Filter used:            %s\n', filter_name);
+fprintf(fileID, 'Laser scan speed:            %s\n', laser_scan_speed);
 fprintf(fileID, '%s\n', repmat('=', 1, 125));
 
 % Header for Peak and Valley columns
